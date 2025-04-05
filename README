@@ -1,0 +1,85 @@
+C-RPN-EVAL
+
+    This program can evaluate postfix arithmetic expressions (Reverse Polish
+    Notation).
+
+    CAUTION: The program is actively under development as of right now. Do not
+             expect it to be finished, or to work.
+
+HOW TO RUN
+
+    user:~$ git clone --depth 1 https://github.com/eeriemyxi/c-rpn-eval
+    user:~$ cd c-rpn-eval
+    user:~$ cc -o rpn src/main.c
+    user:~$ ./rpn "1 2 +"
+
+NOTES
+
+    If RPN expression is "a b c + d e * * f g - / + h g ^ -",
+    
+       ALGORITHM
+
+           * Have a stack for storing tokens.
+           
+           [ a b c + d e * * f g - / + h g ^ - ]
+           * See a, add to stack
+           * See b, add to stack
+           * See c, add to stack
+
+           [ a (b c +) d e * * f g - / + h g ^ - ]
+           * See +, pop last two numbers, a and b, then evaluate -> a + b (k), and add k to stack
+           * See d, add to stack
+           * See e, add to stack
+
+           [ a k (d e *) * f g - / + h g ^ - ]
+           * See *, evaluate d * e (l), add l to stack
+
+           [ a (k l *) f g - / + h g ^ - ]
+           * See *, evaluate k * l (m), add m to stack
+           * See f, add to stack
+           * See g, add to stack
+
+           [ a m (f g -) / + h g ^ - ]
+           * See -, evaluate f - g (n), add n to stack.
+
+           [ a (m n /) + h g ^ - ]
+           * See /, evaluate m / n (o), add o to stack.
+
+           [ (a o +) h g ^ - ]
+           * See +, evaluate a + o (p), add p to stack.
+
+           [ p h g ^ - ]
+           * See h, add to stack
+           * See g, add to stack
+
+           [ p (h g ^) - ]
+           * See ^, evaluate h^g (q), add q to stack.
+
+           [ (p q -) ]
+           * See -, evaluate p - q (r), add r to stack.
+
+           [ r ]
+
+               RESULT
+               
+                   The expression evaluated to r.
+
+AST
+
+    FUNCTIONS
+    
+        I = INTEGER
+        B = BINARY OP
+
+    PROCEDURE
+    
+        2 1 2 * 3 4 * - -         || []
+    
+        2 (1 2 *) 3 4 * - -       || [B(I(1) I(2) *)]
+    
+        2 (1 2 *) (3 4 *) - -     || [B(I(1) I(2) *), B(I(3) I(4) *)]
+    
+        2 ((1 2 *) (3 4 *) -) -   || [B((I(1) I(2) *) (I(3) I(4) *) -)]
+    
+        (2 ((1 2 *) (3 4 *) -) -) || [B(I(2) B((I(1) I(2) *) (I(3) I(4) *) -) -)]
+
