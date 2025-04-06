@@ -12,8 +12,8 @@
  * TODO: Make a text-based visualizer for RPN expressions
  */
 
-#include <stdio.h>
 #include <ctype.h>
+#include <stdio.h>
 
 #define STB_DS_IMPLEMENTATION
 #include "stb_ds.h"
@@ -21,7 +21,11 @@
 typedef enum { EC_OK, EC_REACHED_EOF } ErrorCode;
 
 typedef enum {
-  TK_NUMBER, TK_OP_PLUS, TK_OP_MINUS, TK_OP_STAR, TK_OP_SLASH
+  TK_NUMBER,
+  TK_OP_PLUS,
+  TK_OP_MINUS,
+  TK_OP_STAR,
+  TK_OP_SLASH
 } TokenType;
 
 typedef struct {
@@ -32,9 +36,14 @@ typedef struct {
   } literal;
 } Token;
 
-typedef enum {ABOT_ADD, ABOT_SUBTRACT, ABOT_MULTIPLY, ABOT_DIVIDE} ASTBinaryOpType;
+typedef enum {
+  ABOT_ADD,
+  ABOT_SUBTRACT,
+  ABOT_MULTIPLY,
+  ABOT_DIVIDE
+} ASTBinaryOpType;
 
-typedef enum {ANT_INTEGER, ANT_BINARY_OP} NodeType;
+typedef enum { ANT_INTEGER, ANT_BINARY_OP } NodeType;
 
 typedef struct ASTNode {
   NodeType type;
@@ -59,14 +68,16 @@ ASTNode *make_ast_integer_node(size_t *integer) {
   return node;
 }
 
-ASTNode *make_ast_binary_op_node(ASTBinaryOpType type, char (* literal)[1024], struct ASTNode **left,
+ASTNode *make_ast_binary_op_node(ASTBinaryOpType type, char (*literal)[1024],
+                                 struct ASTNode **left,
                                  struct ASTNode **right) {
   ASTNode *node = (ASTNode *)malloc(sizeof(ASTNode));
 
   node->type = ANT_BINARY_OP;
 
   node->data.binary_op.type = type;
-  snprintf(node->data.binary_op.literal, sizeof(node->data.binary_op.literal), "%.*s", 1, *literal);
+  snprintf(node->data.binary_op.literal, sizeof(node->data.binary_op.literal),
+           "%.*s", 1, *literal);
   node->data.binary_op.rhs = *right;
   node->data.binary_op.lhs = *left;
 
@@ -87,15 +98,11 @@ void print_ast_node(struct ASTNode *node, unsigned indent_level) {
   }
 }
 
-char* shift(char** *argv) {
-  return *(*argv)++;
-}
+char *shift(char ***argv) { return *(*argv)++; }
 
-void print_usage(char* *program) {
-  printf("Usage: %s <code>\n", *program);
-}
+void print_usage(char **program) { printf("Usage: %s <code>\n", *program); }
 
-char* peek(char **code) {
+char *peek(char **code) {
   if (*(*code + 1) != '\0') {
     return *code + 1;
   } else {
@@ -144,7 +151,7 @@ ASTBinaryOpType is_bop(Token token) {
   }
 }
 
-void tokenize_code(char* code, Token* *tokens) {
+void tokenize_code(char *code, Token **tokens) {
   size_t code_length = strlen(code);
 
   printf("[INFO] Tokenizing code=\"%s\" length=%d\n", code, (int)code_length);
@@ -163,7 +170,7 @@ void tokenize_code(char* code, Token* *tokens) {
         exit(1);
       }
 
-      Token* temp_token = (Token *) malloc(sizeof(Token));
+      Token *temp_token = (Token *)malloc(sizeof(Token));
       temp_token->type = TK_NUMBER;
 
       char number_str[1024];
@@ -189,7 +196,7 @@ void tokenize_code(char* code, Token* *tokens) {
       goto boiler;
       continue;
     }
-    
+
     switch (cur_char) {
     case ' ':
     case '\t':
@@ -210,14 +217,15 @@ void tokenize_code(char* code, Token* *tokens) {
 void parse_tokens(Token **tokens, ASTNode ***stack) {
   for (int i = 0; i < arrlen(*tokens); i++) {
     Token token = (*tokens)[i];
-    ASTNode* node;
+    ASTNode *node;
     ASTBinaryOpType abot_type = is_bop(token);
 
     if (abot_type != -1) {
       ASTNode *right = arrpop(*stack);
       ASTNode *left = arrpop(*stack);
 
-      node = make_ast_binary_op_node(abot_type, &(token.literal.string), &left, &right);
+      node = make_ast_binary_op_node(abot_type, &(token.literal.string), &left,
+                                     &right);
 
       arrput(*stack, node);
 
@@ -274,12 +282,12 @@ void evaluate_ast(ASTNode ***nodes) {
   }
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   // [INFO] argv[argc] is NULL (C standard)
 
-  char* program_name = shift(&argv);
+  char *program_name = shift(&argv);
 
-  char* code = shift(&argv);
+  char *code = shift(&argv);
   if (!code) {
     printf("[ERROR] <code> was not provided\n");
     print_usage(&program_name);
@@ -288,7 +296,7 @@ int main(int argc, char** argv) {
 
   printf("[INFO] Provided code is \"%s\"\n", code);
 
-  Token* tokens = NULL;
+  Token *tokens = NULL;
 
   tokenize_code(code, &tokens);
 
