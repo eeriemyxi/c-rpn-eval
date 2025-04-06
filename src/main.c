@@ -164,8 +164,9 @@ void tokenize_code(char *code, Token **tokens) {
 
       arrput(*tokens, *temp_token);
 
-      cursor = cursor + offset;
-      continue;
+      cursor = cursor + offset - 1;
+
+      goto boiler;
     }
 
     Token *temp_token = (Token *)malloc(sizeof(Token));
@@ -173,12 +174,12 @@ void tokenize_code(char *code, Token **tokens) {
 
     if (op_type != -1) {
       temp_token->type = op_type;
+
       snprintf(temp_token->literal.string, sizeof(temp_token->literal.string),
                "%.*s", 1, cursor);
       arrput(*tokens, *temp_token);
 
       goto boiler;
-      continue;
     }
 
     switch (cur_char) {
