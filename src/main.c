@@ -5,7 +5,7 @@
      - [(1 2 +) +]
      - [1 (2 3 +)]
    - Division by zero
- * TODO: Make a function to evaluate the AST
+ * [DONE]: TODO: Make a function to evaluate the AST
  * TODO: Handle errors during parsing
    - Integer overflows
    - Integer underflows
