@@ -169,10 +169,10 @@ void tokenize_code(char *code, Token **tokens) {
       goto boiler;
     }
 
-    Token *temp_token = (Token *)malloc(sizeof(Token));
     TokenType op_type = is_op(cur_char);
 
     if (op_type != -1) {
+      Token *temp_token = (Token *)malloc(sizeof(Token));
       temp_token->type = op_type;
 
       snprintf(temp_token->literal.string, sizeof(temp_token->literal.string),
@@ -186,11 +186,10 @@ void tokenize_code(char *code, Token **tokens) {
     case ' ':
     case '\t':
     case '\n':
-      free(temp_token);
+      fprintf(stderr, "Skipping tokenizing: '%c'\n", cur_char);
       break;
     default:
       fprintf(stderr, "Unknown character: '%c'\n", cur_char);
-      free(temp_token);
     }
 
   boiler:
