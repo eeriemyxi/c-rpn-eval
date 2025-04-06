@@ -115,6 +115,35 @@ ErrorCode consume_until(char **chars, int *offset, int (*predicate)(int)) {
   return EC_REACHED_EOF;
 }
 
+TokenType is_op(char op) {
+  switch (op) {
+  case '+':
+    return TK_OP_PLUS;
+  case '-':
+    return TK_OP_MINUS;
+  case '*':
+    return TK_OP_STAR;
+  case '/':
+    return TK_OP_SLASH;
+  }
+  return -1;
+}
+
+ASTBinaryOpType is_bop(Token token) {
+  switch (token.type) {
+  case TK_OP_PLUS:
+    return ABOT_ADD;
+  case TK_OP_MINUS:
+    return ABOT_SUBTRACT;
+  case TK_OP_STAR:
+    return ABOT_MULTIPLY;
+  case TK_OP_SLASH:
+    return ABOT_DIVIDE;
+  default:
+    return -1;
+  }
+}
+
 void tokenize_code(char* code, Token* *tokens) {
   size_t code_length = strlen(code);
 
@@ -148,17 +177,20 @@ void tokenize_code(char* code, Token* *tokens) {
       continue;
     }
 
-    Token* temp_token = (Token *) malloc(sizeof(Token));
+    Token *temp_token = (Token *)malloc(sizeof(Token));
+    TokenType op_type = is_op(cur_char);
 
-    switch (cur_char) {
-    case '+': temp_token->type = TK_OP_PLUS;
-    case '-': temp_token->type = TK_OP_MINUS;
-    case '*': temp_token->type = TK_OP_STAR;
-    case '/':
-      temp_token->type = TK_OP_SLASH;
-      snprintf(temp_token->literal.string, sizeof(temp_token->literal.string), "%.*s", 1, cursor);
+    if (op_type != -1) {
+      temp_token->type = op_type;
+      snprintf(temp_token->literal.string, sizeof(temp_token->literal.string),
+               "%.*s", 1, cursor);
       arrput(*tokens, *temp_token);
-      break;
+
+      goto boiler;
+      continue;
+    }
+    
+    switch (cur_char) {
     case ' ':
     case '\t':
     case '\n':
@@ -169,54 +201,76 @@ void tokenize_code(char* code, Token* *tokens) {
       free(temp_token);
     }
 
+  boiler:
     cursor++;
     cycle++;
   }
 }
 
-void parse_tokens(Token **tokens) {
-  ASTNode **stack = NULL;
-
+void parse_tokens(Token **tokens, ASTNode ***stack) {
   for (int i = 0; i < arrlen(*tokens); i++) {
     Token token = (*tokens)[i];
     ASTNode* node;
-    ASTBinaryOpType abot_type;
+    ASTBinaryOpType abot_type = is_bop(token);
+
+    if (abot_type != -1) {
+      ASTNode *right = arrpop(*stack);
+      ASTNode *left = arrpop(*stack);
+
+      node = make_ast_binary_op_node(abot_type, &(token.literal.string), &left, &right);
+
+      arrput(*stack, node);
+
+      goto print_ast;
+    }
 
     switch (token.type) {
     case TK_NUMBER:
       printf("Found a number: %zu\n", token.literal.number);
       node = make_ast_integer_node(&(token.literal.number));
-      arrput(stack, node);
+      arrput(*stack, node);
       break;
-    case TK_OP_PLUS:
-      printf("Found a PLUS (+) operator: %s\n", token.literal.string);
-      abot_type = ABOT_ADD;
-    case TK_OP_MINUS:
-      printf("Found a MINUS (-) operator: %s\n", token.literal.string);
-      abot_type = ABOT_SUBTRACT;
-    case TK_OP_STAR:
-      printf("Found a STAR (*) operator: %s\n", token.literal.string);
-      abot_type = ABOT_MULTIPLY;
-    case TK_OP_SLASH:
-      printf("Found a SLASH (/) operator: %s\n", token.literal.string);
-      abot_type = ABOT_DIVIDE;
-
-      ASTNode *right = arrpop(stack);
-      ASTNode *left = arrpop(stack);
-
-      node = make_ast_binary_op_node(abot_type, &(token.literal.string), &left, &right);
-
-      arrput(stack, node);
-
+    default:
+      fprintf(stderr, "Unknown token: %d\n", token.type);
       break;
     }
 
+  print_ast:
     printf("------------------\n");
     printf("[#%d AST ITERATION]\n", i);
-    for (int j = 0; j < arrlen(stack); j++) {
-      print_ast_node(stack[j], 0);
+    for (int j = 0; j < arrlen(*stack); j++) {
+      print_ast_node((*stack)[j], 0);
     }
     printf("------------------\n");
+  }
+}
+
+size_t evaluate_node(ASTNode *node) {
+  switch (node->type) {
+  case ANT_INTEGER:
+    return node->data.integer;
+  case ANT_BINARY_OP: {
+    size_t lhs = evaluate_node(node->data.binary_op.lhs);
+    size_t rhs = evaluate_node(node->data.binary_op.rhs);
+    switch (node->data.binary_op.type) {
+    case ABOT_ADD:
+      return lhs + rhs;
+    case ABOT_SUBTRACT:
+      return lhs - rhs;
+    case ABOT_MULTIPLY:
+      return lhs * rhs;
+    case ABOT_DIVIDE:
+      return lhs / rhs;
+    }
+  };
+  }
+  return 0;
+}
+
+void evaluate_ast(ASTNode ***nodes) {
+  for (int i = 0; i < arrlen(*nodes); i++) {
+    size_t result = evaluate_node((*nodes)[i]);
+    printf("[#%d] Result: %zu\n", i, result);
   }
 }
 
@@ -249,7 +303,11 @@ int main(int argc, char** argv) {
     }
   }
 
-  parse_tokens(&tokens);
+  ASTNode **ast = NULL;
+
+  parse_tokens(&tokens, &ast);
+
+  evaluate_ast(&ast);
 
   return 0;
 }
