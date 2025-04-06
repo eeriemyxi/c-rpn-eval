@@ -18,8 +18,10 @@
 #define STB_DS_IMPLEMENTATION
 #include "stb_ds.h"
 
+// MISC
 typedef enum { EC_OK, EC_REACHED_EOF } ErrorCode;
 
+// TOKENIZER
 typedef enum {
   TK_NUMBER,
   TK_OP_PLUS,
@@ -36,6 +38,7 @@ typedef struct {
   } literal;
 } Token;
 
+// Parser
 typedef enum {
   ABOT_ADD,
   ABOT_SUBTRACT,
@@ -98,10 +101,6 @@ void print_ast_node(struct ASTNode *node, unsigned indent_level) {
   }
 }
 
-char *shift(char ***argv) { return *(*argv)++; }
-
-void print_usage(char **program) { printf("Usage: %s <code>\n", *program); }
-
 char *peek(char **code) {
   if (*(*code + 1) != '\0') {
     return *code + 1;
@@ -134,21 +133,6 @@ TokenType is_op(char op) {
     return TK_OP_SLASH;
   }
   return -1;
-}
-
-ASTBinaryOpType is_bop(Token token) {
-  switch (token.type) {
-  case TK_OP_PLUS:
-    return ABOT_ADD;
-  case TK_OP_MINUS:
-    return ABOT_SUBTRACT;
-  case TK_OP_STAR:
-    return ABOT_MULTIPLY;
-  case TK_OP_SLASH:
-    return ABOT_DIVIDE;
-  default:
-    return -1;
-  }
 }
 
 void tokenize_code(char *code, Token **tokens) {
@@ -211,6 +195,21 @@ void tokenize_code(char *code, Token **tokens) {
   boiler:
     cursor++;
     cycle++;
+  }
+}
+
+ASTBinaryOpType is_bop(Token token) {
+  switch (token.type) {
+  case TK_OP_PLUS:
+    return ABOT_ADD;
+  case TK_OP_MINUS:
+    return ABOT_SUBTRACT;
+  case TK_OP_STAR:
+    return ABOT_MULTIPLY;
+  case TK_OP_SLASH:
+    return ABOT_DIVIDE;
+  default:
+    return -1;
   }
 }
 
@@ -281,6 +280,10 @@ void evaluate_ast(ASTNode ***nodes) {
     printf("[#%d] Result: %zu\n", i, result);
   }
 }
+
+char *shift(char ***argv) { return *(*argv)++; }
+
+void print_usage(char **program) { printf("Usage: %s <code>\n", *program); }
 
 int main(int argc, char **argv) {
   // [INFO] argv[argc] is NULL (C standard)
