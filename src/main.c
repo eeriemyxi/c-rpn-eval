@@ -61,7 +61,7 @@ typedef struct ASTNode {
   } data;
 } ASTNode;
 
-ASTNode *make_ast_integer_node(size_t *integer) {
+ASTNode *make_ast_integer_node(size_t *const integer) {
   ASTNode *node = (ASTNode *)malloc(sizeof(ASTNode));
 
   node->type = ANT_INTEGER;
@@ -71,9 +71,10 @@ ASTNode *make_ast_integer_node(size_t *integer) {
   return node;
 }
 
-ASTNode *make_ast_binary_op_node(ASTBinaryOpType type, char (*literal)[1024],
-                                 struct ASTNode **left,
-                                 struct ASTNode **right) {
+ASTNode *make_ast_binary_op_node(ASTBinaryOpType const type,
+                                 char (*const literal)[1024],
+                                 struct ASTNode **const left,
+                                 struct ASTNode **const right) {
   ASTNode *node = (ASTNode *)malloc(sizeof(ASTNode));
 
   node->type = ANT_BINARY_OP;
@@ -87,21 +88,21 @@ ASTNode *make_ast_binary_op_node(ASTBinaryOpType type, char (*literal)[1024],
   return node;
 }
 
-void print_ast_node(struct ASTNode *node, unsigned indent_level) {
+void print_ast_node(struct ASTNode *const node, unsigned const indent_level) {
   switch (node->type) {
-  case ANT_INTEGER:
-    printf("%*s[INT NODE: %zu]\n", indent_level * 4, "", node->data.integer);
-    break;
-  case ANT_BINARY_OP:
-    printf("%*s[BOP NODE: %s]\n", indent_level * 4, "",
-           node->data.binary_op.literal);
-    print_ast_node(node->data.binary_op.lhs, indent_level + 1);
-    print_ast_node(node->data.binary_op.rhs, indent_level + 1);
-    break;
+    case ANT_INTEGER:
+      printf("%*s[INT NODE: %zu]\n", indent_level * 4, "", node->data.integer);
+      break;
+    case ANT_BINARY_OP:
+      printf("%*s[BOP NODE: %s]\n", indent_level * 4, "",
+             node->data.binary_op.literal);
+      print_ast_node(node->data.binary_op.lhs, indent_level + 1);
+      print_ast_node(node->data.binary_op.rhs, indent_level + 1);
+      break;
   }
 }
 
-char *peek(char **code) {
+char *peek(char **const code) {
   if (*(*code + 1) != '\0') {
     return *code + 1;
   } else {
@@ -109,7 +110,8 @@ char *peek(char **code) {
   }
 }
 
-ErrorCode consume_until(char **chars, int *offset, int (*predicate)(int)) {
+ErrorCode consume_until(char **const chars, int *const offset,
+                        int (*const predicate)(int)) {
   char cur_char;
 
   do {
@@ -123,19 +125,19 @@ ErrorCode consume_until(char **chars, int *offset, int (*predicate)(int)) {
 
 TokenType is_op(char op) {
   switch (op) {
-  case '+':
-    return TK_OP_PLUS;
-  case '-':
-    return TK_OP_MINUS;
-  case '*':
-    return TK_OP_STAR;
-  case '/':
-    return TK_OP_SLASH;
+    case '+':
+      return TK_OP_PLUS;
+    case '-':
+      return TK_OP_MINUS;
+    case '*':
+      return TK_OP_STAR;
+    case '/':
+      return TK_OP_SLASH;
   }
   return -1;
 }
 
-void tokenize_code(char *code, Token **tokens) {
+void tokenize_code(char *const code, Token **const tokens) {
   size_t code_length = strlen(code);
 
   printf("[INFO] Tokenizing code=\"%s\" length=%d\n", code, (int)code_length);
@@ -183,13 +185,13 @@ void tokenize_code(char *code, Token **tokens) {
     }
 
     switch (cur_char) {
-    case ' ':
-    case '\t':
-    case '\n':
-      fprintf(stderr, "Skipping tokenizing: '%c'\n", cur_char);
-      break;
-    default:
-      fprintf(stderr, "Unknown character: '%c'\n", cur_char);
+      case ' ':
+      case '\t':
+      case '\n':
+        fprintf(stderr, "Skipping tokenizing: '%c'\n", cur_char);
+        break;
+      default:
+        fprintf(stderr, "Unknown character: '%c'\n", cur_char);
     }
 
   boiler:
@@ -198,22 +200,22 @@ void tokenize_code(char *code, Token **tokens) {
   }
 }
 
-ASTBinaryOpType is_bop(Token token) {
+ASTBinaryOpType is_bop(Token const token) {
   switch (token.type) {
-  case TK_OP_PLUS:
-    return ABOT_ADD;
-  case TK_OP_MINUS:
-    return ABOT_SUBTRACT;
-  case TK_OP_STAR:
-    return ABOT_MULTIPLY;
-  case TK_OP_SLASH:
-    return ABOT_DIVIDE;
-  default:
-    return -1;
+    case TK_OP_PLUS:
+      return ABOT_ADD;
+    case TK_OP_MINUS:
+      return ABOT_SUBTRACT;
+    case TK_OP_STAR:
+      return ABOT_MULTIPLY;
+    case TK_OP_SLASH:
+      return ABOT_DIVIDE;
+    default:
+      return -1;
   }
 }
 
-void parse_tokens(Token **tokens, ASTNode ***stack) {
+void parse_tokens(Token *const *tokens, ASTNode ***const stack) {
   for (int i = 0; i < arrlen(*tokens); i++) {
     Token token = (*tokens)[i];
     ASTNode *node;
@@ -232,56 +234,54 @@ void parse_tokens(Token **tokens, ASTNode ***stack) {
     }
 
     switch (token.type) {
-    case TK_NUMBER:
-      printf("Found a number: %zu\n", token.literal.number);
-      node = make_ast_integer_node(&(token.literal.number));
-      arrput(*stack, node);
-      break;
-    default:
-      fprintf(stderr, "Unknown token: %d\n", token.type);
-      break;
+      case TK_NUMBER:
+        printf("Found a number: %zu\n", token.literal.number);
+        node = make_ast_integer_node(&(token.literal.number));
+        arrput(*stack, node);
+        break;
+      default:
+        fprintf(stderr, "Unknown token: %d\n", token.type);
+        break;
     }
 
   print_ast:
     printf("------------------\n");
     printf("[#%d AST ITERATION]\n", i);
-    for (int j = 0; j < arrlen(*stack); j++) {
-      print_ast_node((*stack)[j], 0);
-    }
+    for (int j = 0; j < arrlen(*stack); j++) { print_ast_node((*stack)[j], 0); }
     printf("------------------\n");
   }
 }
 
-size_t evaluate_node(ASTNode *node) {
+size_t evaluate_node(ASTNode *const node) {
   switch (node->type) {
-  case ANT_INTEGER:
-    return node->data.integer;
-  case ANT_BINARY_OP: {
-    size_t lhs = evaluate_node(node->data.binary_op.lhs);
-    size_t rhs = evaluate_node(node->data.binary_op.rhs);
-    switch (node->data.binary_op.type) {
-    case ABOT_ADD:
-      return lhs + rhs;
-    case ABOT_SUBTRACT:
-      return lhs - rhs;
-    case ABOT_MULTIPLY:
-      return lhs * rhs;
-    case ABOT_DIVIDE:
-      return lhs / rhs;
-    }
-  };
+    case ANT_INTEGER:
+      return node->data.integer;
+    case ANT_BINARY_OP: {
+      size_t lhs = evaluate_node(node->data.binary_op.lhs);
+      size_t rhs = evaluate_node(node->data.binary_op.rhs);
+      switch (node->data.binary_op.type) {
+        case ABOT_ADD:
+          return lhs + rhs;
+        case ABOT_SUBTRACT:
+          return lhs - rhs;
+        case ABOT_MULTIPLY:
+          return lhs * rhs;
+        case ABOT_DIVIDE:
+          return lhs / rhs;
+      }
+    };
   }
   return 0;
 }
 
-void evaluate_ast(ASTNode ***nodes) {
+void evaluate_ast(ASTNode **const *nodes) {
   for (int i = 0; i < arrlen(*nodes); i++) {
     size_t result = evaluate_node((*nodes)[i]);
     printf("[#%d] Result: %zu\n", i, result);
   }
 }
 
-char *shift(char ***argv) { return *(*argv)++; }
+char *shift(char ***const argv) { return *(*argv)++; }
 
 void print_usage(char **program) { printf("Usage: %s <code>\n", *program); }
 
